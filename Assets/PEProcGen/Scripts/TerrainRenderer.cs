@@ -38,36 +38,82 @@ public class TerrainRenderer : MonoBehaviour {
 	}
 	public void Render(){
 
-		if(TerrainMap == null) return;
-		if(tileSets == null || tileSets.Count == 0){Debug.Log("You must set up a tileset"); return;}
-		TileSet currenTileSet = tileSets.Find(t => t.Name == tilesetName);//Find the currently specified tileset
-		if(currenTileSet == null) currenTileSet = tileSets[0];//Couldnt find the tileset so just use the first one
+		if (TerrainMap == null)
+			return;
+		if (tileSets == null || tileSets.Count == 0) {
+			Debug.Log ("You must set up a tileset");
+			return;
+		}
+		TileSet currenTileSet = tileSets.Find (t => t.Name == tilesetName);//Find the currently specified tileset
+		if (currenTileSet == null)
+			currenTileSet = tileSets [0];//Couldnt find the tileset so just use the first one
+		var timeIt = new TimeIt ("Render - For Loop");
+
+		int numberOfBlank = 0;
 		for (int y = 0; y < TerrainMap.GetLength(1); y++) {
 			for (int x = 0; x < TerrainMap.GetLength(0); x++) {
-				TileData tiledata = currenTileSet.tileData[TerrainMap[x,y]];//Get all the info needed on this tile to render it
-				if(tiledata.blank) continue;
-				GameObject go = GetNextAvailable();
-				go.transform.parent = this.transform;
-				go.transform.localPosition = new Vector3(x,y,0);
-				SpriteRenderer spriteRenderer = go.GetComponent<SpriteRenderer>();
-				spriteRenderer.sprite = tiledata.sprite;
-				go.GetComponent<BoxCollider2D>().enabled = tiledata.boxCollider;
-				go.name = "x: " + x + " y: " + y + " " + tiledata.sprite.name;
+				TileData tiledata =currenTileSet.tileData [TerrainMap [x, y]];
+				if(tiledata.blank) numberOfBlank++;
 			}
 		}
+
+		List<GameObject> available = timeIt.Aggregate ("Get All Objects", () => {
+			return GetAllAvailable (TerrainMap.GetLength (1) * TerrainMap.GetLength (0) - numberOfBlank);
+		});
+
+		int nextAvailable = 0;
+
+		for (int y = 0; y < TerrainMap.GetLength(1); y++) {
+			for (int x = 0; x < TerrainMap.GetLength(0); x++) {
+				TileData tiledata = timeIt.Aggregate("Tile Data", () => {
+					return currenTileSet.tileData [TerrainMap [x, y]];//Get all the info needed on this tile to render it
+				});
+				if (tiledata.blank)
+					continue;
+				timeIt.Aggregate("Object Manipulation", () => {
+					GameObject go = available[nextAvailable++];
+					go.transform.parent = this.transform;
+					go.transform.localPosition = new Vector3 (x, y, 0);
+					SpriteRenderer spriteRenderer = go.GetComponent<SpriteRenderer> ();
+					spriteRenderer.sprite = tiledata.sprite;
+					go.GetComponent<BoxCollider2D> ().enabled = tiledata.boxCollider;
+					go.name = "x: " + x + " y: " + y + " " + tiledata.sprite.name;
+				});
+			}
+		}
+
+		timeIt.CalculateTime ();
+		timeIt.DisplayMessage ();
+		timeIt.DisplayAggregates ();
+	}
+	
+	List<GameObject> GetAllAvailable(int totalSize)
+	{
+		List<GameObject> allAvailable = new List<GameObject> ();
+
+		if (reuse) {
+			foreach (Transform child in this.transform) {
+				GameObject go = Returnable (child);
+				if(go != null) allAvailable.Add(go);
+			}
+		}
+
+		while(allAvailable.Count < totalSize)
+		{
+			if(prefabDefault == null) prefabDefault = Resources.Load<GameObject>("sprite_basic");
+			allAvailable.Add ((GameObject)Instantiate (prefabDefault)) ;
+		}
+
+		return allAvailable;
 	}
 
-	GameObject GetNextAvailable(){
-		if(prefabDefault == null) prefabDefault = Resources.Load<GameObject>("sprite_basic");
-		if(reuse){
-			foreach(Transform child in this.transform){
-				if(!child.gameObject.activeSelf){
-					child.gameObject.SetActive(true);
-					return child.gameObject;
-				}
-			}
+	static GameObject Returnable (Transform child)
+	{
+		if (!child.gameObject.activeSelf) {
+			child.gameObject.SetActive (true);
+			return child.gameObject;
 		}
-		return (GameObject)Instantiate(prefabDefault);
+		return null;
 	}
 
 	public void ClearImmediate(){

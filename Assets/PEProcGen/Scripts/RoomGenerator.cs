@@ -19,7 +19,7 @@ public class RoomGenerator : BaseGenerator {
 				CurrentMap[x,y]= 1;
 			}
 		}
-		Rect last_room = new Rect();
+		Rect last_room;
 		int room = 0;
 		int retries = 0;
 		_rooms.Clear();

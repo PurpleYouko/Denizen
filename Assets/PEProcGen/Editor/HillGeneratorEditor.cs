@@ -12,9 +12,7 @@ public class HillGeneratorEditor : Editor {
 
 		
 		if (GUILayout.Button("Generate")){
-			using (var timeIt = new TimeIt("generate button")) {
-				h.Generate();
-			}
+			h.Generate();
 		}
 		if (GUILayout.Button("Append")){
 			h.Append();
