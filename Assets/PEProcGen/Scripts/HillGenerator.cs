@@ -44,8 +44,13 @@ public class HillGenerator : BaseGenerator
 
 	public void Generate () 
 	{
-		GenerateMap();
-		if(renderImmediate) Render ();
+		TimeIt.Time ("message", () => {
+			GenerateMap ();
+			TimeIt.Time ("Generate - Render", () => {
+				if (renderImmediate)
+					Render ();
+			});
+		});
 	}
 
 	public void ClearMap()
