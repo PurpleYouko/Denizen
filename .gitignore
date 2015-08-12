@@ -51,6 +51,7 @@ Temporary Items
 [Bb]uild/
 [Ll]ibrary/
 sysinfo.txt
+*.txt
  
 # ===================================== #
 # Visual Studio / MonoDevelop generated #
